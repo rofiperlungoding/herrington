@@ -1,0 +1,122 @@
+# ─── Dependencies ──────────────────────────────────────────────────────
+node_modules
+.pnpm-store/
+
+# ─── Build output ──────────────────────────────────────────────────────
+dist
+dist-ssr
+build
+out
+*.tsbuildinfo
+
+# ─── Environment & secrets ─────────────────────────────────────────────
+# NEVER commit any .env file. The example template is the only one
+# allowed in version control.
+.env
+.env.*
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+!.env.example
+
+# Plain credential / key drops that might land here by accident.
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*-credentials.json
+*credentials*.json
+service-account*.json
+gcp-key*.json
+client_secret*.json
+*.token
+auth-token*.txt
+
+# ─── Local tooling state ───────────────────────────────────────────────
+
+# Netlify CLI scratch space (`netlify dev` blob server, link metadata).
+.netlify/
+
+# TanStack Router generated route tree cache.
+.tanstack/
+
+# Supabase CLI per-machine working state.
+supabase/.temp/
+supabase/.branches/
+
+# Transient artefacts produced by build / migration verification scripts.
+.kiro-tmp/
+.build-tmp/
+
+# ─── IDE config (per-machine, not project-wide) ────────────────────────
+.vscode/
+.idea/
+.zed/
+.fleet/
+.cursor/
+
+# IDE-specific workspace data — local-only metadata, draft notes, hooks,
+# and any other per-machine editor state. Not for the public repo.
+.kiro/
+
+# Spec drafts and one-off design notes that previously lived at the
+# repo root before they were folded into per-feature spec folders.
+Kiro Requirements Spec.md
+Drizzle Turso Schema.txt
+
+# ─── OS & editor artefacts ─────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ─── Logs ──────────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# ─── Editors with autosave / swap files ────────────────────────────────
+*.swp
+*.swo
+*~
+.#*
+\#*#
+
+# ─── Test & coverage artefacts ─────────────────────────────────────────
+coverage/
+.nyc_output/
+*.lcov
+__snapshots__/.tmp/
+
+# ─── Runtime / cache ───────────────────────────────────────────────────
+.cache/
+.turbo/
+.parcel-cache/
+.next/
+.nuxt/
+.svelte-kit/
+.docusaurus/
+.serverless/
+.vercel/
+
+# ─── Misc ──────────────────────────────────────────────────────────────
+# Binary lockfile dump from a one-off Drizzle inspection.
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal

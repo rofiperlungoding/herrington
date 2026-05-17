@@ -1,0 +1,253 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap');
+@import './styles/tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * shadcn/ui design tokens — "slate" base color palette with CSS variables.
+ *
+ * These variables are consumed by the color mappings in tailwind.config.ts
+ * (e.g. `bg-background` -> `hsl(var(--background))`). The full set is the
+ * stock shadcn CLI output; keeping them intact means `npx shadcn@latest add
+ * <component>` later will "just work" without follow-up tweaks.
+ *
+ * Values are raw HSL triplets (no `hsl(...)` wrapper) so Tailwind's
+ * `hsl(var(--x) / <alpha-value>)` opacity modifier works.
+ */
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/*
+ * Global focus-ring suppression.
+ *
+ * The Design_System originally specified a 2px Focus_Ring on every
+ * interactive element (Requirement 11.3). At the user's request the
+ * visual ring is suppressed across the entire app — keyboard focus
+ * still works, but there's no blue ring/outline around focused
+ * elements. This rule neutralizes Tailwind's `ring-*` utility layer
+ * (which composes via the `--tw-ring-shadow` / `--tw-ring-offset-shadow`
+ * custom properties) and clears the native browser outline. It does
+ * not affect non-focus box-shadows (e.g. `shadow-e1` on buttons).
+ */
+@layer utilities {
+  *:focus,
+  *:focus-visible {
+    outline: none !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+    --tw-ring-offset-shadow: 0 0 #0000 !important;
+  }
+}
+
+/*
+ * Motion system — smooth-in animations applied across the app so
+ * elements never "pop" in instantly. The animation classes are
+ * additive utilities; components opt in by adding the appropriate
+ * class. Every keyframe targets `transform` + `opacity` only so the
+ * GPU compositor can run them without layout thrash.
+ *
+ * Timing follows the design tokens: `--duration-standard` for the
+ * primary motion, `--easing-standard` for natural ease-out feel.
+ *
+ * `prefers-reduced-motion: reduce` collapses every animation to a
+ * single instant frame so the motion never overrides accessibility
+ * preferences.
+ */
+@layer utilities {
+  /* Universal: any element with this class fades + slides up 8px. */
+  .anim-fade-in {
+    animation: anim-fade-in var(--duration-emphasized, 320ms)
+      var(--easing-standard, cubic-bezier(0.2, 0, 0, 1)) both;
+  }
+
+  /* Smaller, faster fade — used on text-only updates and toasts. */
+  .anim-fade-in-fast {
+    animation: anim-fade-in var(--duration-standard, 200ms)
+      var(--easing-standard, cubic-bezier(0.2, 0, 0, 1)) both;
+  }
+
+  /* Scale-in: nice on dialogs, dropdowns, popovers. */
+  .anim-scale-in {
+    animation: anim-scale-in var(--duration-emphasized, 320ms)
+      var(--easing-emphasized, cubic-bezier(0.2, 0, 0, 1.2)) both;
+    transform-origin: top right;
+  }
+
+  /* Slide-in from the right — for off-canvas panels and toasts. */
+  .anim-slide-right {
+    animation: anim-slide-right var(--duration-emphasized, 320ms)
+      var(--easing-standard, cubic-bezier(0.2, 0, 0, 1)) both;
+  }
+
+  /* Smooth list reveal: each child stagger-delayed via `--anim-i`. */
+  .anim-stagger > * {
+    animation: anim-fade-in var(--duration-emphasized, 320ms)
+      var(--easing-standard, cubic-bezier(0.2, 0, 0, 1)) both;
+    animation-delay: calc(var(--anim-i, 0) * 40ms);
+  }
+
+  /* Universal smooth color/transform transition — applied to every
+     interactive element via the CSS below so hover/active states fade
+     instead of snapping. */
+  .anim-base,
+  button,
+  a,
+  [role='button'],
+  [role='menuitem'],
+  [role='tab'] {
+    transition-property: color, background-color, border-color, opacity,
+      transform, box-shadow;
+    transition-duration: var(--duration-fast, 120ms);
+    transition-timing-function: var(--easing-standard, cubic-bezier(0.2, 0, 0, 1));
+  }
+}
+
+@keyframes anim-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes anim-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes anim-slide-right {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Three-dot typing indicator. Each dot is offset via inline
+   animation-delay; the keyframe lifts the dot a few pixels and
+   brightens it briefly so the rhythm reads as "thinking". */
+@keyframes typing-bounce {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+
+/* Accessibility — collapse to a single instant frame when the user
+   has asked the OS for reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  .anim-fade-in,
+  .anim-fade-in-fast,
+  .anim-scale-in,
+  .anim-slide-right,
+  .anim-stagger > * {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* Typing dots: keep them visible at full opacity, just stop the bounce. */
+  [style*='typing-bounce'] {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .anim-base,
+  button,
+  a,
+  [role='button'],
+  [role='menuitem'],
+  [role='tab'] {
+    transition-duration: 1ms !important;
+  }
+}

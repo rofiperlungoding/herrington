@@ -1,0 +1,18 @@
+<!--
+  Herrington apple-touch-icon. iOS uses this when the user adds the
+  site to their home screen. Larger viewBox + slightly larger corner
+  radius (matches iOS app icon visual mass). Same Conservatory ground
+  + Brass H as favicon.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180">
+  <rect width="180" height="180" rx="40" fill="#2a3a2e"/>
+  <g fill="#b8924a" transform="translate(45, 45) scale(1.40625)">
+    <rect x="14" y="11" width="11" height="42"/>
+    <rect x="11" y="11" width="17" height="5"/>
+    <rect x="11" y="48" width="17" height="5"/>
+    <rect x="39" y="11" width="11" height="42"/>
+    <rect x="36" y="11" width="17" height="5"/>
+    <rect x="36" y="48" width="17" height="5"/>
+    <rect x="25" y="30" width="14" height="4"/>
+  </g>
+</svg>

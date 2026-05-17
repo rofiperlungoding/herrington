@@ -1,0 +1,113 @@
+[build]
+  publish = "dist"
+  command = "npm run build"
+
+[dev]
+  # `command` runs the underlying Vite dev server. We invoke vite
+  # directly instead of `npm run dev` so the npm script can map
+  # `dev` -> `netlify dev` (which calls back into this command)
+  # without creating an infinite loop.
+  command = "npm run dev:vite"
+  targetPort = 5173
+  port = 5174
+  framework = "#custom"
+
+[[edge_functions]]
+  function = "tasks"
+  path = "/api/tasks/*"
+
+[[edge_functions]]
+  function = "tasks"
+  path = "/api/tasks"
+
+[[edge_functions]]
+  function = "habits"
+  path = "/api/habits/*"
+
+[[edge_functions]]
+  function = "habits"
+  path = "/api/habits"
+
+[[edge_functions]]
+  function = "chat"
+  path = "/api/chat"
+
+[[edge_functions]]
+  function = "chat"
+  path = "/api/chat/*"
+
+[[edge_functions]]
+  function = "ai"
+  path = "/api/ai/*"
+
+[[edge_functions]]
+  function = "profile"
+  path = "/api/profile"
+
+[[edge_functions]]
+  function = "pomodoro"
+  path = "/api/pomodoro/sessions"
+
+[[edge_functions]]
+  function = "review"
+  path = "/api/review"
+
+[[edge_functions]]
+  function = "briefing"
+  path = "/api/briefing"
+
+[[edge_functions]]
+  function = "notebooks"
+  path = "/api/notebooks"
+
+[[edge_functions]]
+  function = "notebooks"
+  path = "/api/notebooks/*"
+
+[[edge_functions]]
+  function = "connections"
+  path = "/api/connections"
+
+[[edge_functions]]
+  function = "connections"
+  path = "/api/connections/*"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# ----------------------------------------------------------------------------
+# Cache-Control headers (Requirements 6.1, 6.2, 6.3, 6.7)
+# ----------------------------------------------------------------------------
+# Hash-named build assets emitted by Vite live under `/assets/*` and are
+# content-addressed; safe to cache forever with `immutable`.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Static fonts are also content-addressed and shipped with stable filenames.
+[[headers]]
+  for = "/fonts/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# `index.html` and the root path must always be revalidated so users pick up
+# new deploys immediately. No `immutable` here on purpose.
+[[headers]]
+  for = "/"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Edge function API responses negotiate content-encoding (br/gzip) per
+# request, so caches must vary on the `Accept-Encoding` header.
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Vary = "Accept-Encoding"

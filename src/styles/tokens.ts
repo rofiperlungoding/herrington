@@ -1,0 +1,85 @@
+// src/styles/tokens.ts
+// TypeScript mirror of src/styles/tokens.css
+// Colors reference CSS variables so the active [data-theme] wins at runtime.
+
+export const tokens = {
+  spacing: {
+    4: '4px',
+    8: '8px',
+    12: '12px',
+    16: '16px',
+    20: '20px',
+    24: '24px',
+    32: '32px',
+    40: '40px',
+    48: '48px',
+    64: '64px',
+  },
+  radius: {
+    none: '0px',
+    sm: '6px',
+    md: '10px',
+    lg: '16px',
+    xl: '24px',
+    pill: '999px',
+    full: '50%',
+  },
+  elevation: {
+    0: 'var(--elevation-0)',
+    1: 'var(--elevation-1)',
+    2: 'var(--elevation-2)',
+    3: 'var(--elevation-3)',
+    4: 'var(--elevation-4)',
+  },
+  duration: {
+    fast: 'var(--duration-fast)',
+    standard: 'var(--duration-standard)',
+    emphasized: 'var(--duration-emphasized)',
+  },
+  easing: {
+    standard: 'var(--easing-standard)',
+    emphasized: 'var(--easing-emphasized)',
+  },
+  color: {
+    surface: 'var(--color-surface)',
+    'surface-container': 'var(--color-surface-container)',
+    'surface-variant': 'var(--color-surface-variant)',
+    'on-surface': 'var(--color-on-surface)',
+    'on-surface-muted': 'var(--color-on-surface-muted)',
+    primary: 'var(--color-primary)',
+    'on-primary': 'var(--color-on-primary)',
+    'primary-container': 'var(--color-primary-container)',
+    'on-primary-container': 'var(--color-on-primary-container)',
+    secondary: 'var(--color-secondary)',
+    'on-secondary': 'var(--color-on-secondary)',
+    accent: 'var(--color-accent)',
+    'on-accent': 'var(--color-on-accent)',
+    success: 'var(--color-success)',
+    'on-success': 'var(--color-on-success)',
+    warning: 'var(--color-warning)',
+    'on-warning': 'var(--color-on-warning)',
+    error: 'var(--color-error)',
+    'on-error': 'var(--color-on-error)',
+    border: 'var(--color-border)',
+    'border-strong': 'var(--color-border-strong)',
+    overlay: 'var(--color-overlay)',
+    'focus-ring': 'var(--color-focus-ring)',
+    // Brand — Herrington "Conservatory" palette. Mounted on tokens.color
+    // so the parity check (every CSS --color-* must exist in TS) is
+    // satisfied. Tailwind exposes them as `bg-brand-ink`, `text-brand-brass`, etc.
+    'brand-ink': 'var(--color-brand-ink)',
+    'brand-conservatory': 'var(--color-brand-conservatory)',
+    'brand-ivory': 'var(--color-brand-ivory)',
+    'brand-linen': 'var(--color-brand-linen)',
+    'brand-brass': 'var(--color-brand-brass)',
+    'brand-oxblood': 'var(--color-brand-oxblood)',
+  },
+  typography: {
+    caption: { size: '0.75rem', lineHeight: '1.33', weight: 400, tracking: '0em' },
+    label: { size: '0.8125rem', lineHeight: '1.38', weight: 500, tracking: '0em' },
+    body: { size: '0.875rem', lineHeight: '1.5', weight: 400, tracking: '0em' },
+    title: { size: '1.125rem', lineHeight: '1.4', weight: 500, tracking: '-0.01em' },
+    headline: { size: '1.5rem', lineHeight: '1.3', weight: 500, tracking: '-0.01em' },
+    display: { size: '2rem', lineHeight: '1.25', weight: 500, tracking: '-0.01em' },
+  },
+} as const

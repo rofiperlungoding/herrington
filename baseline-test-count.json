@@ -1,0 +1,11 @@
+{
+  "tests/unit": 0,
+  "tests/integration": 0,
+  "tests/components": 56,
+  "tests/motion": 9,
+  "tests/nonregression": 29,
+  "tests/pages": 24,
+  "tests/shell": 22,
+  "tests/tokens": 44,
+  "total": 184
+}

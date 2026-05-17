@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "useDefineForClassFields": true,
+    "skipLibCheck": true,
+
+    "allowImportingTsExtensions": true,
+    "noEmit": true
+  },
+  "include": ["src", "netlify/edge-functions", "tests"],
+  "exclude": ["node_modules", "dist", "src/routeTree.gen.ts"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}

@@ -1,0 +1,17 @@
+<!--
+  Herrington favicon — Monogram H1 "Plate" design.
+  Brass H on Conservatory ground, 12% rounded square (matches
+  Apple/Google icon corner radius conventions).
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="8" fill="#2a3a2e"/>
+  <g fill="#b8924a">
+    <rect x="14" y="11" width="11" height="42"/>
+    <rect x="11" y="11" width="17" height="5"/>
+    <rect x="11" y="48" width="17" height="5"/>
+    <rect x="39" y="11" width="11" height="42"/>
+    <rect x="36" y="11" width="17" height="5"/>
+    <rect x="36" y="48" width="17" height="5"/>
+    <rect x="25" y="30" width="14" height="4"/>
+  </g>
+</svg>

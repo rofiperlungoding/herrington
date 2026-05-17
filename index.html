@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Brand identity -->
+    <title>Herrington</title>
+    <meta name="description" content="Herrington — calm management of your hours." />
+    <meta name="theme-color" content="#2a3a2e" />
+
+    <!-- App icons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.svg" />
+    <link rel="mask-icon" href="/favicon.svg" color="#2a3a2e" />
+
+    <!-- Open Graph / social -->
+    <meta property="og:title" content="Herrington" />
+    <meta property="og:description" content="In good order." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Herrington" />
+    <meta name="twitter:description" content="In good order." />
+
+    <!-- Fonts: Inter (self-hosted, body), Fraunces (Google Fonts, display).
+         Inter is preloaded because every screen uses it. Fraunces is
+         preconnected only — it loads via the @import in tokens.css and
+         only appears on brand surfaces, so we accept the small swap delay
+         to keep the critical path tight. -->
+    <link rel="preload" href="/fonts/Inter-Variable.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
