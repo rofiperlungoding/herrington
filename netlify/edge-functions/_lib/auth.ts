@@ -114,6 +114,11 @@ export async function requireAuth(req: Request): Promise<AuthContext> {
     }
   } catch (err) {
     if (err instanceof HttpError) throw err;
+    // Surface the underlying jose / jwks error to the function logs so
+    // production debugging doesn't require re-deploying with prints.
+    // The client still gets a generic 'invalid_token' — no leakage.
+    const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+    console.error('[auth] jwtVerify failed:', detail);
     throw new HttpError(401, 'invalid_token', 'Invalid or expired token');
   }
 
