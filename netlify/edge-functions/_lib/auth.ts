@@ -26,28 +26,7 @@ export type AuthContext = {
 /**
  * Module-level JWKS fetcher pointing at the Supabase project's
  * `/auth/v1/.well-known/jwks.json` endpoint. `createRemoteJWKSet`
- * caches the key set in memory across calls, so once the worker has
- * warmed up every JWT verification is effectively a local crypto
- * operation.
- *
- * The reference is intentionally module-scoped and is initialised
- * exactly once per worker lifetime via `getJwks()`. It is **never**
- * reassigned by request handlers — `requireAuth` only ever reads it
- * (Requirement 7.2). When `jose` encounters an unknown `kid` it will
- * refetch the JWKS itself, throttled by the `cooldownDuration` option
- * below (Requirement 7.5, EH3).
- *
- * `cooldownDuration: 600_000` (10 minutes) prevents `jose` from
- * hammering the Supabase JWKS endpoint when an unverified token with
- * an unknown KID is presented; refetches are coalesced to at most one
- * per 10-minute window (Requirement 7.3).
- *
- * The verification flow remains asymmetric ES256 (Decision #1 in the
- * performance-optimization design — HS256 is explicitly rejected).
- *
- * The `SUPABASE_URL` env var is read once at first invocation. If the
- * variable is missing the function throws, which `composeHandler`
- * translates into a 500 `internal_error` response.
+ * caches the key set in memory across calls.
  */
 let _jwks: ReturnType<typeof createRemoteJWKSet> | null = null;
 
@@ -68,14 +47,7 @@ function getJwks() {
 
 /**
  * Legacy HS256 verification key for Supabase projects that still issue
- * symmetrically-signed JWTs. Returned when `SUPABASE_JWT_SECRET` is
- * configured. Newer projects migrated to asymmetric keys won't hit
- * this code path — `jwtVerify` against the JWKS succeeds first.
- *
- * The fallback is intentionally OPT-IN: if the env var isn't set,
- * the verify path skips it. This way an asymmetric-only deployment
- * doesn't accidentally accept a stolen legacy token someone reused
- * from another project.
+ * symmetrically-signed JWTs.
  */
 let _hsKey: Uint8Array | null = null;
 
@@ -88,31 +60,91 @@ function getHsKey(): Uint8Array | null {
 }
 
 /**
+ * Decode a JWT payload without verification. Used as a last-resort
+ * fallback to extract `sub` after an authoritative server-side check
+ * with Supabase's `/auth/v1/user` endpoint (which performs full
+ * cryptographic verification on Supabase's side).
+ */
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const padded = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const json = atob(padded + '='.repeat((4 - (padded.length % 4)) % 4));
+    return JSON.parse(json) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Server-side verify-and-fetch via Supabase's `/auth/v1/user` REST
+ * endpoint. This is the canonical authoritative check: Supabase
+ * verifies the JWT using its own crypto (avoiding any Deno Web Crypto
+ * curve quirks), then returns the user record on success or 401 on
+ * failure. We extract the `id` from the response — that's the same
+ * UUID we'd have read from the verified `sub` claim.
+ *
+ * Used as the third tier in the verification ladder after JWKS and
+ * HS256 fallback both fail. ~50ms overhead compared to in-process
+ * verification, but works regardless of which signing algorithm the
+ * project is using and is impervious to Deno Web Crypto edge cases.
+ */
+async function verifyViaSupabase(
+  token: string,
+): Promise<{ id: string; sessionId?: string } | null> {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const apiKey = Deno.env.get('VITE_SUPABASE_PUBLISHABLE_KEY');
+  if (!supabaseUrl) return null;
+
+  try {
+    const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        // Supabase requires an apikey header for this endpoint. The
+        // publishable key is browser-safe, so we accept it from either
+        // SUPABASE_PUBLISHABLE_KEY or the Vite-prefixed mirror.
+        apikey:
+          apiKey ??
+          Deno.env.get('SUPABASE_PUBLISHABLE_KEY') ??
+          Deno.env.get('SUPABASE_ANON_KEY') ??
+          '',
+      },
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { id?: string };
+    if (typeof data.id !== 'string' || data.id.length === 0) return null;
+
+    // Recover the session id from the JWT payload (Supabase's user
+    // endpoint doesn't echo it). Best-effort — we already trust the
+    // token because Supabase just verified it.
+    const payload = decodeJwtPayload(token);
+    const sessionId =
+      payload && typeof payload.session_id === 'string'
+        ? payload.session_id
+        : undefined;
+    return { id: data.id, sessionId };
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Auth_Middleware entry point for every edge-function route handler.
  *
- * Validates the incoming `Authorization: Bearer <Supabase_JWT>` header
- * against the project's JWKS (asymmetric ES256 keys) and returns the
- * `auth.users.id` UUID that scopes all subsequent Turso queries.
+ * Verifies the incoming `Authorization: Bearer <Supabase_JWT>` header
+ * using a three-tier ladder so the function works across every
+ * Supabase configuration:
  *
- * Error ordering is significant:
+ *   1. Asymmetric verify via JWKS (ES256 / EdDSA). Canonical fast path.
+ *   2. Symmetric verify via SUPABASE_JWT_SECRET (HS256). Legacy projects.
+ *   3. REST verify via /auth/v1/user. Fallback when Deno's Web Crypto
+ *      can't handle the JWKS curve (e.g. ES256 P-256 on certain runtimes).
  *
- *   1. Missing / malformed header     → 401 `missing_token`
- *   2. Token fails JWT verification   → 401 `invalid_token`
- *   3. JWT lacks `sub` (user id)      → 401 `invalid_token`
- *
- * Steps 1 and 2 run *before* any DB lookup, so an unauthenticated caller
- * can never probe Turso or, via 404 signals, infer which user IDs exist
- * — the contract enforced by Requirements 1.8 and 2.8 of the
- * life-management-mvp spec.
- *
- * Unlike the previous Clerk-based implementation, there is no lazy
- * provisioning step here: Supabase Auth is the source of truth for
- * users, and the Postgres trigger `on_auth_user_created` (in the
- * Supabase project) populates a matching `public.profiles` row when
- * needed. Turso's `tasks.user_id` / `habits.user_id` columns simply
- * store the Supabase UUID and are not enforced by an FK (cross-DB FKs
- * aren't possible — ownership is enforced by the where-clause in
- * every query).
+ * Each tier costs more — JWKS is in-process, HS256 is in-process,
+ * REST is a network call. We only escalate when the previous tier
+ * rejects the token for a recoverable reason (alg/curve mismatch).
+ * Real signature failures, expiry, etc. fall straight through to 401.
  */
 export async function requireAuth(req: Request): Promise<AuthContext> {
   const header = req.headers.get('authorization') ?? '';
@@ -122,53 +154,73 @@ export async function requireAuth(req: Request): Promise<AuthContext> {
   }
   const token = match[1];
 
-  let sub: string;
-  let sessionId: string | undefined;
+  // Tier 1: JWKS asymmetric verify.
   try {
-    let payload: Record<string, unknown> | undefined;
-
-    // Try asymmetric verification first via the published JWKS
-    // (ES256). This is the canonical path for Supabase projects
-    // that have migrated to asymmetric keys.
-    try {
-      const result = await jwtVerify(token, getJwks());
-      payload = result.payload as Record<string, unknown>;
-    } catch (jwksErr) {
-      // Fall back to HS256 only when:
-      //   1. The JWKS verify failed because the token's `alg` is
-      //      not in the published key set (indicates an HS256
-      //      legacy token), AND
-      //   2. We have a SUPABASE_JWT_SECRET env var configured.
-      // Any other JWKS error (expired, bad signature, malformed)
-      // bubbles up as a 401 — we don't want to relax those.
-      const isAlgMismatch =
-        jwksErr instanceof Error &&
-        (jwksErr.name === 'JOSENotSupported' ||
-          jwksErr.name === 'JOSEAlgNotAllowed' ||
-          jwksErr.message.includes('Unsupported "alg"') ||
-          jwksErr.message.includes('no applicable key'));
-      const hsKey = isAlgMismatch ? getHsKey() : null;
-      if (!hsKey) throw jwksErr;
-      const result = await jwtVerify(token, hsKey, { algorithms: ['HS256'] });
-      payload = result.payload as Record<string, unknown>;
-    }
-
+    const { payload } = await jwtVerify(token, getJwks());
     if (typeof payload.sub !== 'string' || payload.sub.length === 0) {
       throw new HttpError(401, 'invalid_token', 'Invalid or expired token');
     }
-    sub = payload.sub;
-    if (typeof payload.session_id === 'string') {
-      sessionId = payload.session_id;
+    return {
+      userId: payload.sub,
+      sessionId:
+        typeof payload.session_id === 'string' ? payload.session_id : undefined,
+    };
+  } catch (jwksErr) {
+    if (jwksErr instanceof HttpError) throw jwksErr;
+    const isRecoverable =
+      jwksErr instanceof Error &&
+      (jwksErr.name === 'JOSENotSupported' ||
+        jwksErr.name === 'JOSEAlgNotAllowed' ||
+        jwksErr.message.includes('Unsupported "alg"') ||
+        jwksErr.message.includes('Unsupported key curve') ||
+        jwksErr.message.includes('no applicable key'));
+    if (!isRecoverable) {
+      const detail =
+        jwksErr instanceof Error ? `${jwksErr.name}: ${jwksErr.message}` : String(jwksErr);
+      console.error('[auth] jwks verify failed:', detail);
+      throw new HttpError(401, 'invalid_token', 'Invalid or expired token');
     }
-  } catch (err) {
-    if (err instanceof HttpError) throw err;
-    // Surface the underlying jose / jwks error to the function logs so
-    // production debugging doesn't require re-deploying with prints.
-    // The client still gets a generic 'invalid_token' — no leakage.
-    const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
-    console.error('[auth] jwtVerify failed:', detail);
-    throw new HttpError(401, 'invalid_token', 'Invalid or expired token');
+    // Recoverable: try the next tier.
+    console.warn(
+      '[auth] jwks tier rejected token, escalating:',
+      jwksErr instanceof Error ? jwksErr.message : String(jwksErr),
+    );
   }
 
-  return { userId: sub, sessionId };
+  // Tier 2: HS256 fallback.
+  const hsKey = getHsKey();
+  if (hsKey) {
+    try {
+      const { payload } = await jwtVerify(token, hsKey, {
+        algorithms: ['HS256'],
+      });
+      if (typeof payload.sub !== 'string' || payload.sub.length === 0) {
+        throw new HttpError(401, 'invalid_token', 'Invalid or expired token');
+      }
+      return {
+        userId: payload.sub,
+        sessionId:
+          typeof payload.session_id === 'string'
+            ? payload.session_id
+            : undefined,
+      };
+    } catch (hsErr) {
+      if (hsErr instanceof HttpError) throw hsErr;
+      // HS256 rejected — could be a real ES256 token. Fall through to
+      // the REST tier rather than 401-ing prematurely.
+      console.warn(
+        '[auth] hs256 tier rejected token, escalating:',
+        hsErr instanceof Error ? hsErr.message : String(hsErr),
+      );
+    }
+  }
+
+  // Tier 3: REST verify against Supabase.
+  const restResult = await verifyViaSupabase(token);
+  if (restResult) {
+    return { userId: restResult.id, sessionId: restResult.sessionId };
+  }
+
+  console.error('[auth] all verification tiers failed');
+  throw new HttpError(401, 'invalid_token', 'Invalid or expired token');
 }
