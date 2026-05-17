@@ -67,6 +67,27 @@ function getJwks() {
 }
 
 /**
+ * Legacy HS256 verification key for Supabase projects that still issue
+ * symmetrically-signed JWTs. Returned when `SUPABASE_JWT_SECRET` is
+ * configured. Newer projects migrated to asymmetric keys won't hit
+ * this code path — `jwtVerify` against the JWKS succeeds first.
+ *
+ * The fallback is intentionally OPT-IN: if the env var isn't set,
+ * the verify path skips it. This way an asymmetric-only deployment
+ * doesn't accidentally accept a stolen legacy token someone reused
+ * from another project.
+ */
+let _hsKey: Uint8Array | null = null;
+
+function getHsKey(): Uint8Array | null {
+  if (_hsKey) return _hsKey;
+  const secret = Deno.env.get('SUPABASE_JWT_SECRET');
+  if (!secret) return null;
+  _hsKey = new TextEncoder().encode(secret);
+  return _hsKey;
+}
+
+/**
  * Auth_Middleware entry point for every edge-function route handler.
  *
  * Validates the incoming `Authorization: Bearer <Supabase_JWT>` header
@@ -104,7 +125,34 @@ export async function requireAuth(req: Request): Promise<AuthContext> {
   let sub: string;
   let sessionId: string | undefined;
   try {
-    const { payload } = await jwtVerify(token, getJwks());
+    let payload: Record<string, unknown> | undefined;
+
+    // Try asymmetric verification first via the published JWKS
+    // (ES256). This is the canonical path for Supabase projects
+    // that have migrated to asymmetric keys.
+    try {
+      const result = await jwtVerify(token, getJwks());
+      payload = result.payload as Record<string, unknown>;
+    } catch (jwksErr) {
+      // Fall back to HS256 only when:
+      //   1. The JWKS verify failed because the token's `alg` is
+      //      not in the published key set (indicates an HS256
+      //      legacy token), AND
+      //   2. We have a SUPABASE_JWT_SECRET env var configured.
+      // Any other JWKS error (expired, bad signature, malformed)
+      // bubbles up as a 401 — we don't want to relax those.
+      const isAlgMismatch =
+        jwksErr instanceof Error &&
+        (jwksErr.name === 'JOSENotSupported' ||
+          jwksErr.name === 'JOSEAlgNotAllowed' ||
+          jwksErr.message.includes('Unsupported "alg"') ||
+          jwksErr.message.includes('no applicable key'));
+      const hsKey = isAlgMismatch ? getHsKey() : null;
+      if (!hsKey) throw jwksErr;
+      const result = await jwtVerify(token, hsKey, { algorithms: ['HS256'] });
+      payload = result.payload as Record<string, unknown>;
+    }
+
     if (typeof payload.sub !== 'string' || payload.sub.length === 0) {
       throw new HttpError(401, 'invalid_token', 'Invalid or expired token');
     }
