@@ -17,13 +17,31 @@ const f32Vector = customType<{ data: number[]; driverData: Buffer }>({
 });
 
 
-// NOTE: Authentication and user metadata live in Supabase (`auth.users` and
-// `public.profiles`). Turso only stores app data. The `user_id` columns
-// below are the Supabase user UUID (the JWT `sub` claim verified by the
-// edge function in `netlify/edge-functions/_lib/auth.ts`). They are not
-// enforced by a foreign key because cross-database FKs are not possible;
-// ownership is enforced at the API layer by folding `eq(*.user_id,
-// auth.userId)` into every query's where-clause.
+// NOTE: Authentication and user metadata live in Turso.
+// The `user_id` columns below reference `users.id` (a UUIDv4).
+// Cross-database FKs are no longer an issue as everything is in Turso,
+// but for legacy reasons (and to keep the schema simple), some tables
+// don't enforce foreign keys. Ownership is enforced at the API layer
+// by folding `eq(*.user_id, auth.userId)` into every query's where-clause.
+
+export const users = sqliteTable('users', {
+  id: text('id').primaryKey(),
+  email: text('email').notNull().unique(),
+  passwordHash: text('password_hash').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(strftime('%s', 'now'))`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(strftime('%s', 'now'))`),
+});
+
+export const sessions = sqliteTable('sessions', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  refreshToken: text('refresh_token').notNull().unique(),
+  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(strftime('%s', 'now'))`),
+}, (t) => ({
+  byRefreshToken: index('idx_sessions_refresh_token').on(t.refreshToken),
+  byUserId: index('idx_sessions_user_id').on(t.userId),
+}));
 
 
 // 2. Tasks Table

@@ -18,9 +18,9 @@ describe('Primary color token', () => {
       'utf-8',
     )
 
-    // Extract the value of --color-primary from the [data-theme='light'] block
+    // Extract the value of --color-primary from the color :root block
     const themeBlock = tokensCss.match(
-      /\[data-theme=['"]light['"]\]\s*\{([^}]+)\}/s,
+      /\/\* ── Color tokens: scoped per theme ─────────────────────── \*\/\s*:root\s*\{([^}]+)\}/s,
     )
     expect(themeBlock).not.toBeNull()
 

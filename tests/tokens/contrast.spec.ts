@@ -35,9 +35,12 @@ const TOKENS_CSS_PATH = resolve(__dirname, '../../src/styles/tokens.css')
  * the underlying surface.
  */
 function parseLightThemeColors(css: string): Map<string, string> {
-  const lightBlockMatch = css.match(/\[data-theme=['"]light['"]\]\s*\{([\s\S]*?)\n\}/)
+  // Use the color tokens :root block
+  const lightBlockMatch = css.match(
+    /\/\* ── Color tokens: scoped per theme ─────────────────────── \*\/\s*:root\s*\{([^}]+)\}/s,
+  )
   if (!lightBlockMatch) {
-    throw new Error(`Could not locate [data-theme='light'] block in tokens.css`)
+    throw new Error(`Could not locate color :root block in tokens.css`)
   }
   const block = lightBlockMatch[1]
   const result = new Map<string, string>()

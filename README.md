@@ -49,7 +49,7 @@ For brand identity, voice, and visual standards see [`BRAND.md`](./BRAND.md).
 | UI primitives | Radix Primitives + custom shadcn-style set | All components live under `src/components/ui` |
 | Backend | Edge functions (Deno-compatible TypeScript) | Mounted by an in-process Vite plugin in development |
 | Database | Turso (libSQL) via Drizzle ORM | Vector search via `F32_BLOB` |
-| Auth | Supabase Auth (`@supabase/auth-js` directly) | Auth-only client; full SDK is excluded from the bundle |
+| Auth | Custom JWT Auth via Turso / Jose | Session-backed local JWT auth (HS256) via Drizzle / Turso |
 | AI | Mistral (chat + embeddings), Tavily (web search) | Round-robin Tavily keys for free-tier extension |
 | Hosting | Netlify (static front-end + edge functions) | Used in production only; development is plain Vite |
 
@@ -85,7 +85,7 @@ For brand identity, voice, and visual standards see [`BRAND.md`](./BRAND.md).
 ### Prerequisites
 
 - Node.js 20 or newer
-- A Supabase project (URL plus publishable key)
+- A generated JWT secret key (for AUTH_JWT_SECRET)
 - A Turso database (URL plus auth token)
 - API keys for Mistral and Tavily (one to four Tavily keys are accepted)
 - Netlify CLI **only** if you intend to validate Netlify-specific behavior locally
@@ -107,9 +107,7 @@ The complete reference, including comments, lives in `.env.example`. The most-us
 
 | Variable | Scope | Purpose |
 |---|---|---|
-| `VITE_SUPABASE_URL` | Browser | Supabase project URL |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Browser | New-style publishable auth key |
-| `SUPABASE_URL` | Edge | Same URL; used to fetch JWKS for token verification |
+| `AUTH_JWT_SECRET` | Edge | HS256 secret key for signing and verifying user session JWTs |
 | `TURSO_DATABASE_URL` | Edge | libSQL endpoint |
 | `TURSO_AUTH_TOKEN` | Edge | Database auth token |
 | `MISTRAL_API_KEY` | Edge | Chat completions and embeddings |
@@ -145,13 +143,13 @@ Tailwind's default spacing scale is **replaced** (not extended) with an editoria
 Color, elevation, motion, and typography tokens live in `src/styles/tokens.css` and are mirrored as TypeScript values in `src/styles/tokens.ts`. The `scripts/check-tokens.mjs` script enforces parity at build time.
 
 ### Synchronous Authentication
-A module-level subscription to `supabase.auth.onAuthStateChange` populates a Zustand store before any component renders. The API fetcher reads the cached access token synchronously, eliminating the per-request `await getSession()` round-trip.
+An automated bootstrap flow checks `localStorage` for a cached session at startup, performs an asynchronous token refresh if the token is close to expiry, and stores the active JWT in a Zustand store. The API fetcher reads this cached token synchronously, eliminating per-request state checks.
 
 ### Optimistic by Default
 All write paths (tasks, habits, profile, pomodoro) use `useMutation` with `onMutate` snapshotting and `onError` rollback. The user interface updates first; the server confirms second.
 
 ### Stateless Edge Functions
-Each edge function validates the Supabase JWT, opens a fresh Drizzle client, and scopes every query by the verified `userId`. There is no server-side session state.
+Each edge function validates the HS256 JWT from the `Authorization` header using the shared `AUTH_JWT_SECRET`, opens a fresh Drizzle client, and scopes every query by the verified `userId`. There is no server-side session state.
 
 ### Pure Streak Logic
 The streak transition function in `src/shared/streak/computeNextStreak.ts` is the single source of truth and is shared verbatim between the client (optimistic update) and the server (authoritative update). They cannot diverge.

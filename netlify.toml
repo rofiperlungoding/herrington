@@ -13,6 +13,22 @@
   framework = "#custom"
 
 [[edge_functions]]
+  function = "sign-up"
+  path = "/api/sign-up"
+
+[[edge_functions]]
+  function = "sign-in"
+  path = "/api/sign-in"
+
+[[edge_functions]]
+  function = "sign-out"
+  path = "/api/sign-out"
+
+[[edge_functions]]
+  function = "refresh"
+  path = "/api/refresh"
+
+[[edge_functions]]
   function = "tasks"
   path = "/api/tasks/*"
 

@@ -7,26 +7,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Monogram } from '@/components/brand/Monogram'
 import { Wordmark } from '@/components/brand/Wordmark'
-import { supabase } from '@/lib/supabaseClient'
+import { useAuthStore, useSession } from '@/lib/authStore'
 
-/**
- * `/sign-in` route — custom email + password form backed by Supabase Auth.
- *
- * Replaces the previous Clerk hosted `<SignIn />` widget with a primitive
- * form built from Design_System parts (`Button`, `Input`, `Label`) so the
- * sign-in screen stays visually consistent with the rest of the redesigned
- * app. Two modes share the same form chrome:
- *
- *   - "sign-in": calls `signInWithPassword({ email, password })`
- *   - "sign-up": calls `signUp({ email, password })`. With email
- *      confirmation enabled (Supabase default) the user receives a
- *      verification email; we surface that as an in-form notice rather
- *      than a redirect.
- *
- * Once a session exists the `_authed` route's `onAuthStateChange` handler
- * already manages the redirect, so this page only needs to push to
- * `/tasks` defensively if a session is detected here.
- */
 export const Route = createFileRoute('/sign-in')({
   component: SignInPage,
 })
@@ -42,16 +24,13 @@ function SignInPage() {
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
+  const { session, ready } = useSession()
+
   useEffect(() => {
-    let cancelled = false
-    supabase.auth.getSession().then(({ data }) => {
-      if (cancelled) return
-      if (data.session) navigate({ to: '/tasks' as never, replace: true })
-    })
-    return () => {
-      cancelled = true
+    if (ready && session) {
+      navigate({ to: '/tasks' as never, replace: true })
     }
-  }, [navigate])
+  }, [ready, session, navigate])
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -59,28 +38,20 @@ function SignInPage() {
     setNotice(null)
     setSubmitting(true)
     try {
-      if (mode === 'sign-in') {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        })
-        if (error) throw error
-        navigate({ to: '/tasks' as never, replace: true })
-      } else {
-        const { data, error } = await supabase.auth.signUp({ email, password })
-        if (error) throw error
-        // If email confirmation is off, we get a session immediately and
-        // the auth state listener routes us. If confirmation is on, the
-        // session is null and we surface a check-your-inbox notice.
-        if (data.session) {
-          navigate({ to: '/tasks' as never, replace: true })
-        } else {
-          setNotice(
-            'Account created. Check your email to confirm your address before signing in.',
-          )
-          setMode('sign-in')
-        }
+      const endpoint = mode === 'sign-in' ? '/api/sign-in' : '/api/sign-up'
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+      
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data.error || 'Authentication failed. Try again.')
       }
+
+      useAuthStore.getState().setSession(data.session)
+      navigate({ to: '/tasks' as never, replace: true })
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Authentication failed. Try again.',

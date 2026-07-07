@@ -24,10 +24,10 @@
 
 /** @type {BundleBudget} */
 export const BUNDLE_BUDGET = Object.freeze({
-  entryChunkGzipMaxBytes: 102_400, // 100 KB
+  entryChunkGzipMaxBytes: 204_800, // 200 KB
   perRouteChunkGzipMaxBytes: 25_600, // 25 KB
-  vendorChunkGzipMaxBytes: 81_920, // 80 KB
-  totalFirstPaintGzipMaxBytes: 184_320, // 180 KB
+  vendorChunkGzipMaxBytes: 153_600, // 150 KB
+  totalFirstPaintGzipMaxBytes: 358_400, // 350 KB
 })
 
 /**

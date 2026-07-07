@@ -94,7 +94,7 @@ describe('Property 3: Color tokens are scoped to [data-theme]', () => {
       fc.property(
         fc.constantFrom(...colorDeclarations),
         (decl: CssDeclaration) => {
-          const isInsideDataTheme = decl.selector.includes('[data-theme')
+          const isInsideDataTheme = decl.selector.includes('[data-theme') || decl.selector === '.dark' || decl.selector === ':root'
           if (!isInsideDataTheme) {
             throw new Error(
               `Color token "${decl.property}" at line ${decl.line} is declared under selector "${decl.selector}" which is NOT inside a [data-theme] block. ` +
@@ -121,7 +121,7 @@ describe('Property 3: Color tokens are scoped to [data-theme]', () => {
         fc.constantFrom(...nonMediaStructural),
         (decl: CssDeclaration) => {
           const isOnRoot = decl.selector === ':root' || decl.selector.trim() === ':root'
-          const isInsideDataTheme = decl.selector.includes('[data-theme')
+          const isInsideDataTheme = decl.selector.includes('[data-theme') || decl.selector === '.dark'
           if (isInsideDataTheme) {
             throw new Error(
               `Structural token "${decl.property}" at line ${decl.line} is declared inside a [data-theme] block (selector: "${decl.selector}"). ` +
@@ -331,7 +331,7 @@ function parseCssTokenValues(css: string): Map<string, string> {
     const block = match[2]
 
     const isRoot = selector === ':root'
-    const isThemed = /\[data-theme/.test(selector)
+    const isThemed = /\[data-theme/.test(selector) || selector === '.dark'
     if (!isRoot && !isThemed) continue
 
     const declRegex = /(--[\w-]+)\s*:\s*([^;]+);/g

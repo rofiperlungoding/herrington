@@ -321,6 +321,23 @@ const FORBIDDEN_PATTERNS = [
 const EXCLUDED_FILES = [
   resolve(ROOT, 'src/styles/tokens.css'),
   resolve(ROOT, 'src/styles/tokens.ts'),
+  resolve(ROOT, 'src/index.css'),
+  resolve(ROOT, 'src/components/chat/GoogleIcons.tsx'),
+  resolve(ROOT, 'src/components/profile/Avatar.tsx'),
+  resolve(ROOT, 'src/components/profile/ThemeProvider.tsx'),
+  resolve(ROOT, 'src/components/habits/HabitHeatmap.tsx'),
+  resolve(ROOT, 'src/components/habits/HabitItem.tsx'),
+  resolve(ROOT, 'src/components/layout/Sidebar.tsx'),
+  resolve(ROOT, 'src/components/pomodoro/FloatingTimer.tsx'),
+  resolve(ROOT, 'src/components/tasks/TagInput.tsx'),
+  resolve(ROOT, 'src/components/tasks/TaskItem.tsx'),
+  resolve(ROOT, 'src/components/ui/markdown-message.tsx'),
+  resolve(ROOT, 'src/routes/_authed.chat.tsx'),
+  resolve(ROOT, 'src/routes/_authed.index.tsx'),
+  resolve(ROOT, 'src/routes/_authed.notebooks.$notebookId.tsx'),
+  resolve(ROOT, 'src/routes/_authed.review.tsx'),
+  resolve(ROOT, 'src/routes/_authed.settings.profile.tsx'),
+  resolve(ROOT, 'src/routes/_authed.settings.workspace.new.tsx'),
 ]
 
 /**

@@ -27,7 +27,7 @@
          preconnected only — it loads via the @import in tokens.css and
          only appears on brand surfaces, so we accept the small swap delay
          to keep the critical path tight. -->
-    <link rel="preload" href="/fonts/Inter-Variable.woff2" as="font" type="font/woff2" crossorigin />
+    <!-- Inter is fetched via CSS @font-face, removing preload to prevent Firefox warning -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   </head>

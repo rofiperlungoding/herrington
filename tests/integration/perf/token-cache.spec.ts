@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Property 5: Same-origin auth invariant
  *
@@ -30,22 +31,7 @@ interface AuthEventEntry {
 
 // ─── Mock setup ─────────────────────────────────────────────────────────────
 
-// Capture the onAuthStateChange callback so we can fire events manually.
-let authStateCallback: ((event: string, session: unknown) => void) | null = null
-
-vi.mock('@/lib/supabaseClient', () => ({
-  supabase: {
-    auth: {
-      onAuthStateChange: (
-        cb: (event: string, session: unknown) => void,
-      ) => {
-        authStateCallback = cb
-        return { data: { subscription: { unsubscribe: vi.fn() } } }
-      },
-      getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
-    },
-  },
-}))
+// Supabase is no longer used. The token cache is driven directly by authStore.setSession().
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -53,22 +39,21 @@ function makeSession(accessToken: string) {
   return {
     access_token: accessToken,
     refresh_token: 'refresh_' + accessToken,
-    expires_in: 3600,
-    token_type: 'bearer',
+    expires_at: Math.floor(Date.now() / 1000) + 3600,
     user: { id: 'user-1', email: 'test@example.com' },
   }
 }
 
+let __globalUseAuthStore: any; // captured in beforeEach
+
 /**
- * Fire an auth event through the captured onAuthStateChange callback,
- * simulating what Supabase would do internally.
+ * Simulate an auth event by setting the session directly in the store.
  */
 function fireAuthEvent(entry: AuthEventEntry) {
-  if (!authStateCallback) {
-    throw new Error('onAuthStateChange callback not captured — module not loaded?')
-  }
   const session = entry.token ? makeSession(entry.token) : null
-  authStateCallback(entry.event, session)
+  if (__globalUseAuthStore) {
+    __globalUseAuthStore.getState().setSession(session)
+  }
 }
 
 /**
@@ -110,31 +95,20 @@ describe('Token cache state invariant (Property 5)', () => {
   let useAuthStore: { getState: () => { accessToken: string | null }; setState: (state: Record<string, unknown>) => void }
 
   beforeEach(async () => {
-    // Reset the callback capture
-    authStateCallback = null
+    // Stub localStorage
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn(),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+    })
 
-    // Dynamically import the auth store so the module-level subscription
-    // re-registers with our mock on each test run.
+    // Dynamically import the auth store so it is fresh.
     vi.resetModules()
-
-    // Re-mock after resetModules
-    vi.doMock('@/lib/supabaseClient', () => ({
-      supabase: {
-        auth: {
-          onAuthStateChange: (
-            cb: (event: string, session: unknown) => void,
-          ) => {
-            authStateCallback = cb
-            return { data: { subscription: { unsubscribe: vi.fn() } } }
-          },
-          getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
-        },
-      },
-    }))
 
     const authModule = await import('@/lib/authStore')
     getCachedAccessToken = authModule.getCachedAccessToken
     useAuthStore = authModule.useAuthStore as unknown as typeof useAuthStore
+    __globalUseAuthStore = useAuthStore
 
     // Reset store to initial state
     useAuthStore.setState({

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render } from '@testing-library/react'
 import React from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 /**
  * Validates: Requirement 9.2
@@ -59,13 +60,23 @@ import { Sidebar } from '@/components/layout/Sidebar'
 
 describe('Sidebar fallback border (Requirement 9.2)', () => {
   it('renders an <aside> element', () => {
-    const { container } = render(<Sidebar />)
+    const queryClient = new QueryClient()
+    const { container } = render(
+      <QueryClientProvider client={queryClient}>
+        <Sidebar />
+      </QueryClientProvider>
+    )
     const aside = container.querySelector('aside')
     expect(aside).not.toBeNull()
   })
 
   it('applies the border-r fallback class on the rendered <aside>', () => {
-    const { container } = render(<Sidebar />)
+    const queryClient = new QueryClient()
+    const { container } = render(
+      <QueryClientProvider client={queryClient}>
+        <Sidebar />
+      </QueryClientProvider>
+    )
     const aside = container.querySelector('aside') as HTMLElement
     expect(aside.className.split(/\s+/)).toContain('border-r')
   })
@@ -76,7 +87,12 @@ describe('Sidebar fallback border (Requirement 9.2)', () => {
     // resolves to `var(--color-border)` from `tokens.css`. Confirm both halves
     // of the fallback are present so the border is not just a 1-pixel line of
     // an arbitrary color.
-    const { container } = render(<Sidebar />)
+    const queryClient = new QueryClient()
+    const { container } = render(
+      <QueryClientProvider client={queryClient}>
+        <Sidebar />
+      </QueryClientProvider>
+    )
     const aside = container.querySelector('aside') as HTMLElement
     const classes = aside.className.split(/\s+/)
     expect(classes).toContain('border-r')

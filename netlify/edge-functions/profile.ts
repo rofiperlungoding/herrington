@@ -31,6 +31,7 @@ const PatchBody = z.object({
     .optional(),
   locationLabel: z.string().trim().max(80).nullable().optional(),
   focusAreas: z.string().trim().max(200).nullable().optional(),
+  theme: z.enum(['auto', 'light', 'dark']).optional(),
   accent: z
     .enum(['default', 'blue', 'green', 'amber', 'rose', 'violet', 'mono'])
     .optional(),
@@ -48,6 +49,7 @@ interface ProfileRow {
   avatarColor: string | null;
   locationLabel: string | null;
   focusAreas: string | null;
+  theme: string;
   accent: string;
   dateFormat: string;
   showMarkets: boolean;
@@ -65,6 +67,7 @@ function profileDto(row: ProfileRow) {
     avatarColor: row.avatarColor,
     locationLabel: row.locationLabel,
     focusAreas: row.focusAreas,
+    theme: row.theme as 'auto' | 'light' | 'dark',
     accent: row.accent as
       | 'default'
       | 'blue'
@@ -101,6 +104,7 @@ async function ensureProfile(
     avatarColor: null,
     locationLabel: null,
     focusAreas: null,
+    theme: 'auto',
     accent: 'default',
     dateFormat: 'long',
     showMarkets: true,
@@ -139,6 +143,7 @@ export default composeHandler(async (req: Request): Promise<Response> => {
     if ('avatarColor' in body) updates.avatarColor = body.avatarColor;
     if ('locationLabel' in body) updates.locationLabel = body.locationLabel;
     if ('focusAreas' in body) updates.focusAreas = body.focusAreas;
+    if ('theme' in body) updates.theme = body.theme;
     if ('accent' in body) updates.accent = body.accent;
     if ('dateFormat' in body) updates.dateFormat = body.dateFormat;
     if ('showMarkets' in body) updates.showMarkets = body.showMarkets;

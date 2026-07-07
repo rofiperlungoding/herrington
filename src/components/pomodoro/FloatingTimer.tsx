@@ -109,7 +109,7 @@ export function FloatingTimer() {
       className={cn(
         'fixed bottom-16 right-16 z-50',
         'flex items-center gap-12',
-        'rounded-pill border border-border bg-surface px-12 py-8 shadow-e2',
+        'rounded-pill bg-surface px-12 py-8 shadow-e2',
         'anim-scale-in',
         'max-w-[min(90vw,360px)]',
       )}

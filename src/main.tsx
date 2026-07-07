@@ -12,6 +12,19 @@ import './index.css'
 // fonts + spacing across every markdown surface.
 import 'katex/dist/katex.min.css'
 
+if (typeof window !== 'undefined') {
+  // Use a slight delay to ensure we run after Vite and React DevTools have printed their initial logs
+  setTimeout(() => {
+    console.clear()
+    
+    // Silence casual logging but keep console.error active for bug reporting
+    console.log = () => {}
+    console.info = () => {}
+    console.debug = () => {}
+    console.warn = () => {}
+  }, 1000)
+}
+
 /**
  * Simple class-based ErrorBoundary that catches unhandled render errors and
  * displays a fallback UI with a reload button. Prevents the entire app from

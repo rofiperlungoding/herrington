@@ -60,16 +60,16 @@ describe('Auth bootstrap deadline (Property 3)', () => {
     vi.resetModules()
 
     // Re-apply mocks after resetModules
-    vi.doMock('@/lib/supabaseClient', () => ({
-      supabase: {
-        auth: {
-          onAuthStateChange: vi.fn(() => ({
-            data: { subscription: { unsubscribe: vi.fn() } },
-          })),
-          getSession: vi.fn(() => new Promise(() => {})), // Never resolves
-        },
-      },
-    }))
+    // Mock bootstrapAuth to do nothing so the store never becomes ready.
+    vi.doMock('@/lib/authStore', async (importOriginal) => {
+      const actual = await importOriginal<typeof import('@/lib/authStore')>()
+      // Ensure the store starts in a non-ready state
+      actual.useAuthStore.setState({ ready: false, timedOut: false })
+      return {
+        ...actual,
+        bootstrapAuth: vi.fn(() => new Promise(() => {})), // Hangs forever
+      }
+    })
 
     vi.doMock('@tanstack/react-router', () => ({
       createRootRouteWithContext: () => (opts: { component: React.ComponentType }) => ({

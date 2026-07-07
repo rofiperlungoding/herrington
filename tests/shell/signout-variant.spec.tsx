@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import React from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 /**
  * **Validates: Requirement 9.7**
@@ -67,18 +68,22 @@ describe('Sidebar Sign-Out button variant (Requirement 9.7)', () => {
     useUiStore.setState({ sidebarCollapsed: false })
   })
 
-  it('renders the Sign-Out control with the `text` Button variant', () => {
-    render(<Sidebar />)
+  it('renders the Sign-Out control with the correct variant', () => {
+    const queryClient = new QueryClient()
+    render(
+      <QueryClientProvider client={queryClient}>
+        <Sidebar />
+      </QueryClientProvider>
+    )
 
-    const signOutButton = screen.getByRole('button', { name: /sign out/i })
+    const accountButton = screen.getByRole('button', { name: /account/i })
+    fireEvent.click(accountButton)
 
-    // The `text` variant is the only variant in src/components/ui/button.tsx
-    // that pairs a transparent background with the primary text color and a
-    // primary-container hover background. Asserting all three classes locks
-    // the variant down without depending on cva's internal class ordering.
-    expect(signOutButton.className).toContain('bg-transparent')
-    expect(signOutButton.className).toContain('text-primary')
-    expect(signOutButton.className).toContain('hover:bg-primary-container')
+    const signOutButton = screen.getByRole('menuitem', { name: /sign out/i })
+
+    // The Sign-Out item in the AccountFooter flyout uses text-on-surface and hover:bg-surface-variant
+    expect(signOutButton.className).toContain('text-on-surface')
+    expect(signOutButton.className).toContain('hover:bg-surface-variant')
 
     // Negative checks: any of these would imply a different variant slipped in.
     expect(signOutButton.className).not.toContain('bg-primary ')

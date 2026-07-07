@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { render } from '@testing-library/react'
 import React from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 /**
  * **Validates: Requirement 12.5**
@@ -109,10 +110,13 @@ describe('AppShell matchMedia-unavailable fallback (Requirement 12.5)', () => {
       (window as Window & typeof globalThis).matchMedia,
     ).toBeUndefined()
 
+    const queryClient = new QueryClient()
     const { container } = render(
-      <AppShell>
-        <p>content</p>
-      </AppShell>,
+      <QueryClientProvider client={queryClient}>
+        <AppShell>
+          <p>content</p>
+        </AppShell>
+      </QueryClientProvider>,
     )
 
     // BottomNav is identified by the fixed-position `<nav>` with the
@@ -144,10 +148,13 @@ describe('AppShell matchMedia-unavailable fallback (Requirement 12.5)', () => {
       value: undefined,
     })
 
+    const queryClient = new QueryClient()
     const { container } = render(
-      <AppShell>
-        <p>content</p>
-      </AppShell>,
+      <QueryClientProvider client={queryClient}>
+        <AppShell>
+          <p>content</p>
+        </AppShell>
+      </QueryClientProvider>,
     )
 
     const bottomNav = container.querySelector('nav[aria-label="Primary"]')

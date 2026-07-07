@@ -33,7 +33,7 @@ npm run dev
 
 The development server is plain Vite. The custom Vite plugin at `scripts/edge-dev-plugin.ts` performs three roles during the `serve` lifecycle:
 
-1. **Loads `.env`** into `process.env` so server-side variables (`SUPABASE_URL`, `TURSO_AUTH_TOKEN`, `MISTRAL_API_KEY`, etc.) are available to edge functions running under Node.
+1. **Loads `.env`** into `process.env` so server-side variables (`AUTH_JWT_SECRET`, `TURSO_AUTH_TOKEN`, `MISTRAL_API_KEY`, etc.) are available to edge functions running under Node.
 2. **Installs a `globalThis.Deno.env` shim** that forwards `Deno.env.get(...)` to `process.env`. This allows the edge functions to remain Deno-portable for production deployment without runtime-specific branching.
 3. **Mounts each file under `netlify/edge-functions/*.ts`** at `/api/<file-stem>` via a connect middleware. Vite's SSR module loader handles compilation; an in-plugin `transform` hook rewrites Deno-style `.ts` imports so they resolve through Vite's module graph.
 
@@ -126,7 +126,7 @@ Edge functions live under `netlify/edge-functions/`. They are stateless TypeScri
 ```
 netlify/edge-functions/
 ├── _lib/
-│   ├── auth.ts          requireAuth — verifies the Supabase JWT against JWKS
+│   ├── auth.ts          requireAuth — verifies the local JWT (HS256) against AUTH_JWT_SECRET
 │   ├── db.ts            createDrizzleClient — fresh client per request
 │   ├── handler.ts       composeHandler + HttpError — turns thrown errors into JSON envelopes
 │   ├── json.ts          jsonResponse, errorResponse helpers
@@ -176,16 +176,17 @@ Avoid logging request bodies that contain user content.
 
 ## Authentication
 
-- The browser uses `@supabase/auth-js` directly, not the full `@supabase/supabase-js`. This excludes the Realtime, Storage, PostgREST, and Functions sub-clients from the bundle.
-- `src/lib/authStore.ts` subscribes to `onAuthStateChange` exactly once at module load and caches the access token in a Zustand store.
+- The application uses a custom JWT-based authentication system backed by Turso. The `@supabase/auth-js` dependency has been completely removed from the project.
+- User sign-up, sign-in, sign-out, and token refresh are handled via custom local endpoints: `/api/sign-up`, `/api/sign-in`, `/api/sign-out`, and `/api/refresh`.
+- `src/lib/authStore.ts` manages the session (containing `access_token`, `refresh_token`, `expires_at`, and user info) and persists it in `localStorage` under `custom-auth-session`.
+- An automated bootstrap flow checks `localStorage` at startup and refreshes the token asynchronously if it expires in less than 5 minutes.
 - `useAuthedApi` reads the cached token synchronously — there is no `getSession()` round-trip per request.
 - React-query consumers gate their `enabled` flag on `ready && !!session` to avoid the brief pre-bootstrap window where the cached token is `null`.
-- Edge functions verify JWTs against the project's JWKS using the `jose` library. Verification is asymmetric (ES256); HS256 is explicitly rejected.
-- Stale refresh tokens are caught by a global `unhandledrejection` handler that signs the user out and clears the local-storage entries (`sb-*`). The application returns to the sign-in page automatically rather than looping 401s.
+- Edge functions verify JWTs against the shared `AUTH_JWT_SECRET` (HS256 signature verification) using the `jose` library.
 
 ## AI Integration
 
-- **Mistral** is the chat and embedding provider. Chat uses `mistral-large-latest` with tool-calling; embeddings use the 1024-dimension model.
+- **Mistral** is the chat and embedding provider. Chat uses `mistral-small-latest` with tool-calling to ensure fast responses and lower rate-limiting on the free tier; embeddings use the 1024-dimension model.
 - **Tavily** powers web search via Mistral tool calls. Up to four keys rotate round-robin in `_lib/tavily.ts`. The tool-calling loop in `chat.ts` caps at three rounds to prevent runaway searches.
 - **Citations** are stored as JSON on the assistant message row. The client renders them as inline pills with hover-only previews; clicking is a no-operation. Sources open from the dedicated panel.
 - **Notebook embeddings** are stored in Turso `F32_BLOB` columns and retrieved with `vector_top_k`. When the top match falls below a confidence threshold, the function fires a Tavily search, ingests the results as `kind='web'` sources, and re-runs retrieval before responding.
@@ -266,6 +267,6 @@ The baseline test suites in `tests/unit/` and `tests/integration/` are the regre
 | `Generated path "/" for route "/_authed" did not match` | A typed `<Link to="/">` clashes when a layout route and its index share `fullPath: '/'` | Render the home link as a plain `<a>` with `useNavigate` (already in `Sidebar` and `BottomNav`) |
 | Switch/slider renders misaligned | The locked Tailwind spacing scale clips arbitrary pixel utilities | Use inline `style` for size-sensitive primitives |
 | Mistral 502 after a tool call | Mistral occasionally returns empty `content` after `web_search` | The chat handler falls back to the Tavily answer + citations. If a 502 persists, check the edge log for `[chat] mistral round had no choice` |
-| `/api/*` returns 401 immediately | Stale Supabase refresh token in `localStorage` | Auto-recovery is in place. Manual reset: clear `sb-*` keys from the application's local storage and sign in again. |
-| `[auth] verify failed: SUPABASE_URL is not set` | `.env` was not loaded | Restart `npm run dev`. The dev plugin reads `.env` at startup. |
+| `/api/*` returns 401 immediately | Stale custom refresh token in `localStorage` | Clear `custom-auth-session` key from the application's local storage and sign in again. |
+| `[auth] verify failed: AUTH_JWT_SECRET is not set` | `.env` was not loaded | Restart `npm run dev`. The dev plugin reads `.env` at startup. |
 | Vite Fast Refresh invalidates after edits | A module exports both components and non-component values | A full reload is harmless; the warning is a Fast Refresh limitation, not a bug |

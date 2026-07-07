@@ -158,7 +158,7 @@ function CitationPill({
         {/* Tooltip — pure CSS, appears on hover/focus of the pill */}
         <span
           role="tooltip"
-          className="pointer-events-none absolute bottom-[calc(100%_+_4px)] left-1/2 z-20 w-[280px] -translate-x-1/2 translate-y-2 rounded-md border border-border bg-surface-container p-12 text-left opacity-0 shadow-e2 transition-[opacity,transform] duration-fast ease-standard group-hover/cite:translate-y-0 group-hover/cite:opacity-100 group-focus/cite:translate-y-0 group-focus/cite:opacity-100"
+          className="pointer-events-none absolute bottom-[calc(100%_+_4px)] left-1/2 z-20 w-[280px] -translate-x-1/2 translate-y-2 rounded-md bg-surface-container p-12 text-left opacity-0 shadow-e2 transition-[opacity,transform] duration-fast ease-standard group-hover/cite:translate-y-0 group-hover/cite:opacity-100 group-focus/cite:translate-y-0 group-focus/cite:opacity-100"
         >
           <span className="mb-4 flex items-baseline justify-between gap-8">
             <span className="truncate text-caption font-semibold text-on-surface">

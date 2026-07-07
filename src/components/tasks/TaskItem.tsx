@@ -335,7 +335,7 @@ function ActionMenu({
           role="menu"
           className={cn(
             'absolute right-0 top-full z-10 mt-4 flex w-48 flex-col',
-            'rounded-md border border-border bg-surface shadow-e2',
+            'rounded-md bg-surface shadow-e2',
             'anim-scale-in',
           )}
           style={{ width: '180px' }}

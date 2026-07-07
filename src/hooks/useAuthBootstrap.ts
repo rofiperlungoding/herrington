@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useAuthStore } from '@/lib/authStore'
+import { useAuthStore, bootstrapAuth } from '@/lib/authStore'
 
 /**
  * Tracks the Supabase auth bootstrap state and races it against a 10-second
@@ -74,14 +74,7 @@ export function useAuthBootstrap(): AuthBootstrapState {
     // Re-trigger session restore. On retry, `INITIAL_SESSION` won't fire
     // again, so we manually resolve the session from `getSession()` and
     // update the store directly.
-    import('@/lib/supabaseClient').then(({ supabase }) => {
-      supabase.auth.getSession().then(({ data }) => {
-        const s = useAuthStore.getState()
-        s._setSession(data.session)
-        s._setReady()
-        s._clearTimedOut()
-      })
-    })
+    bootstrapAuth()
 
     setAttempt((a) => a + 1)
   }, [])

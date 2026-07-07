@@ -15,7 +15,29 @@ import { useProfile, type AccentKey } from '@/hooks/useProfile'
  */
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const profile = useProfile()
+  const theme = profile.data?.theme ?? 'auto'
   const accent = profile.data?.accent ?? 'default'
+
+  // Theme — apply `.dark` to <html>.
+  React.useEffect(() => {
+    const root = document.documentElement
+
+    const applyTheme = () => {
+      const isDark =
+        theme === 'dark' ||
+        (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+      root.classList.toggle('dark', isDark)
+    }
+
+    applyTheme()
+
+    if (theme === 'auto') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+      const listener = () => applyTheme()
+      mediaQuery.addEventListener('change', listener)
+      return () => mediaQuery.removeEventListener('change', listener)
+    }
+  }, [theme])
 
   // Accent — write CSS variable overrides on <html>.
   React.useEffect(() => {

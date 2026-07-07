@@ -17,7 +17,7 @@
 import { QueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { ApiError } from './apiFetch'
-import { supabase } from './supabaseClient'
+import { useAuthStore } from './authStore'
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -44,7 +44,7 @@ export const queryClient = new QueryClient({
           // `_authed` route's `onAuthStateChange` listener flips us to
           // `/sign-in`, then clear cached queries (we don't want stale
           // data from the previous user to flash to the next).
-          void supabase.auth.signOut()
+          void useAuthStore.getState().signOut()
           queryClient.clear()
           toast.error('Session expired. Please sign in again.')
         }

@@ -25,7 +25,7 @@ import { Monogram } from '@/components/brand/Monogram'
 import { Wordmark } from '@/components/brand/Wordmark'
 import { useUiStore } from '@/stores/uiStore'
 import { queryClient } from '@/lib/queryClient'
-import { supabase } from '@/lib/supabaseClient'
+import { useAuthStore, useSession } from '@/lib/authStore'
 import { useProfile } from '@/hooks/useProfile'
 import { cn } from '@/lib/utils'
 
@@ -84,8 +84,11 @@ export function Sidebar() {
   const navigate = useNavigate()
   const profile = useProfile()
 
+  const { session } = useSession()
+  const defaultName = session?.user?.email?.split('@')[0] || 'You'
+
   async function handleSignOut() {
-    await supabase.auth.signOut()
+    await useAuthStore.getState().signOut()
     queryClient.clear()
     navigate({ to: '/sign-in' as never })
   }
@@ -147,7 +150,7 @@ export function Sidebar() {
             displayName={
               profile.data?.preferredName ||
               profile.data?.displayName ||
-              'You'
+              defaultName
             }
             headline={profile.data?.headline ?? null}
             avatarEmoji={profile.data?.avatarEmoji ?? null}
@@ -256,7 +259,7 @@ function AccountFooter({
         <div
           role="menu"
           className={cn(
-            'absolute z-50 min-w-[200px] overflow-hidden rounded-md border border-border bg-surface shadow-e2',
+            'absolute z-50 min-w-[200px] overflow-hidden rounded-md bg-surface shadow-e2',
             'anim-scale-in',
             collapsed ? 'bottom-full left-full ml-8 mb-0' : 'bottom-full left-0 mb-8',
           )}

@@ -15,10 +15,11 @@ import {
   useProfile,
   useUpdateProfile,
   type AccentKey,
+  type ThemeKey,
 } from '@/hooks/useProfile'
 import { useSmartNotifications } from '@/hooks/useSmartNotifications'
 import { queryClient } from '@/lib/queryClient'
-import { supabase } from '@/lib/supabaseClient'
+import { useAuthStore, useSession } from '@/lib/authStore'
 import { cn } from '@/lib/utils'
 
 /**
@@ -45,9 +46,12 @@ function ProfileSettingsPage() {
   const update = useUpdateProfile()
   const navigate = useNavigate()
   const notif = useSmartNotifications()
+  const { session } = useSession()
+  
+  const defaultName = session?.user?.email?.split('@')[0] || 'Your name'
 
   async function handleSignOut() {
-    await supabase.auth.signOut()
+    await useAuthStore.getState().signOut()
     queryClient.clear()
     navigate({ to: '/sign-in' as never })
   }
@@ -99,14 +103,14 @@ function ProfileSettingsPage() {
       {/* Identity preview */}
       <section className="flex items-center gap-16 rounded-lg border border-border bg-surface p-20">
         <Avatar
-          name={draft.displayName || draft.preferredName}
+          name={draft.displayName || draft.preferredName || defaultName}
           emoji={draft.avatarEmoji || profile.data?.avatarEmoji}
           color={profile.data?.avatarColor ?? null}
           size={64}
         />
         <div className="flex min-w-0 flex-col gap-4">
           <p className="truncate text-title font-semibold text-on-surface">
-            {draft.preferredName || draft.displayName || 'Your name'}
+            {draft.preferredName || draft.displayName || defaultName}
           </p>
           {draft.headline && (
             <p className="truncate text-body text-on-surface-muted">
@@ -128,7 +132,7 @@ function ProfileSettingsPage() {
             value={draft.displayName}
             onChange={(e) => setDraft({ ...draft, displayName: e.target.value })}
             onBlur={() => commit('displayName', draft.displayName)}
-            placeholder="Jane Doe"
+            placeholder={defaultName}
             maxLength={80}
           />
         </Field>
@@ -140,7 +144,7 @@ function ProfileSettingsPage() {
             value={draft.preferredName}
             onChange={(e) => setDraft({ ...draft, preferredName: e.target.value })}
             onBlur={() => commit('preferredName', draft.preferredName)}
-            placeholder="Jane"
+            placeholder={draft.displayName || defaultName}
             maxLength={40}
           />
         </Field>
@@ -188,7 +192,13 @@ function ProfileSettingsPage() {
       </Section>
 
       {/* Appearance */}
-      <Section title="Appearance" description="Pick an accent color.">
+      <Section title="Appearance" description="Personalize the app's look and feel.">
+        <Field label="Theme">
+          <ThemePicker
+            value={profile.data?.theme ?? 'auto'}
+            onChange={(v) => update.mutate({ theme: v })}
+          />
+        </Field>
         <Field label="Accent">
           <AccentPicker
             value={profile.data?.accent ?? 'default'}
@@ -404,6 +414,42 @@ function AccentPicker({
           {value === o.key && (
             <Check className="h-16 w-16 text-on-primary" aria-hidden="true" />
           )}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function ThemePicker({
+  value,
+  onChange,
+}: {
+  value: ThemeKey
+  onChange: (v: ThemeKey) => void
+}) {
+  const options: Array<{ key: ThemeKey; label: string }> = [
+    { key: 'auto', label: 'Auto' },
+    { key: 'light', label: 'Light' },
+    { key: 'dark', label: 'Dark' },
+  ]
+
+  return (
+    <div className="flex flex-wrap items-center gap-12">
+      {options.map((o) => (
+        <button
+          key={o.key}
+          type="button"
+          onClick={() => onChange(o.key)}
+          aria-label={o.label}
+          aria-pressed={value === o.key}
+          className={cn(
+            'inline-flex h-32 shrink-0 items-center justify-center rounded-full border px-16 text-body font-medium transition-colors duration-fast ease-standard',
+            value === o.key
+              ? 'border-transparent bg-on-surface text-surface'
+              : 'border-border bg-surface text-on-surface hover:bg-surface-variant',
+          )}
+        >
+          {o.label}
         </button>
       ))}
     </div>

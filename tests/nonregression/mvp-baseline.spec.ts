@@ -127,7 +127,7 @@ function shapeKeys(schema: { shape: Record<string, unknown> }): string[] {
 describe('Property 25 — Zod contract field-shape snapshots', () => {
   it('TaskDTO has the canonical MVP field set', () => {
     expect(shapeKeys(TaskDTO)).toEqual(
-      ['category', 'createdAt', 'deadline', 'id', 'isCompleted', 'title', 'userId'].sort(),
+      ['category', 'createdAt', 'deadline', 'id', 'isCompleted', 'rescheduleCount', 'tags', 'title', 'userId'].sort(),
     )
   })
 
@@ -136,11 +136,11 @@ describe('Property 25 — Zod contract field-shape snapshots', () => {
   })
 
   it('CreateTaskRequest accepts title, category, deadline only', () => {
-    expect(shapeKeys(CreateTaskRequest)).toEqual(['category', 'deadline', 'title'])
+    expect(shapeKeys(CreateTaskRequest)).toEqual(['category', 'deadline', 'tags', 'title'])
   })
 
   it('UpdateTaskRequest accepts title, category, deadline only', () => {
-    expect(shapeKeys(UpdateTaskRequest)).toEqual(['category', 'deadline', 'title'])
+    expect(shapeKeys(UpdateTaskRequest)).toEqual(['category', 'deadline', 'tags', 'title'])
   })
 
   it('ToggleCompletionRequest exposes only isCompleted', () => {
@@ -149,7 +149,7 @@ describe('Property 25 — Zod contract field-shape snapshots', () => {
 
   it('HabitDTO has the canonical MVP field set', () => {
     expect(shapeKeys(HabitDTO)).toEqual(
-      ['currentStreak', 'id', 'lastCompletedDate', 'longestStreak', 'title', 'userId'].sort(),
+      ['currentStreak', 'id', 'kind', 'lastCompletedDate', 'longestStreak', 'title', 'userId'].sort(),
     )
   })
 
@@ -158,7 +158,7 @@ describe('Property 25 — Zod contract field-shape snapshots', () => {
   })
 
   it('CreateHabitRequest exposes only title', () => {
-    expect(shapeKeys(CreateHabitRequest)).toEqual(['title'])
+    expect(shapeKeys(CreateHabitRequest)).toEqual(['kind', 'title'])
   })
 
   it('UpdateHabitRequest exposes only title', () => {

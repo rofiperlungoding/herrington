@@ -39,7 +39,7 @@ import {
  */
 
 const MISTRAL_ENDPOINT = 'https://api.mistral.ai/v1/chat/completions';
-const DEFAULT_MODEL = 'mistral-large-latest';
+const DEFAULT_MODEL = 'mistral-small-latest';
 
 const SYSTEM_PROMPT = buildSystemPrompt();
 

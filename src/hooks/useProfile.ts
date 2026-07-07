@@ -32,6 +32,7 @@ const Profile = z.object({
   avatarColor: z.string().nullable(),
   locationLabel: z.string().nullable(),
   focusAreas: z.string().nullable(),
+  theme: z.enum(['auto', 'light', 'dark']),
   accent: z.enum(['default', 'blue', 'green', 'amber', 'rose', 'violet', 'mono']),
   dateFormat: z.enum(['long', 'short', 'iso']),
   showMarkets: z.boolean(),
@@ -39,6 +40,7 @@ const Profile = z.object({
   updatedAt: z.number(),
 })
 export type Profile = z.infer<typeof Profile>
+export type ThemeKey = Profile['theme']
 export type AccentKey = Profile['accent']
 
 const apiFetch = createApiFetch(getCachedAccessToken)
@@ -70,6 +72,7 @@ export type ProfilePatch = Partial<{
   avatarColor: string | null
   locationLabel: string | null
   focusAreas: string | null
+  theme: ThemeKey
   accent: AccentKey
   dateFormat: 'long' | 'short' | 'iso'
   showMarkets: boolean
