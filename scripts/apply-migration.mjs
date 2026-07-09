@@ -44,8 +44,8 @@ for (const stmt of statements) {
     console.log(`  [${i}/${statements.length}] ✓ ${head}`)
   } catch (err) {
     const msg = err.message || String(err)
-    // Tolerate "duplicate column name" so re-running is safe.
-    if (/duplicate column name/i.test(msg)) {
+    // Tolerate duplicate/already-applied errors so re-running is safe.
+    if (/duplicate column name|already exists|already an index/i.test(msg)) {
       console.log(`  [${i}/${statements.length}] ↷ skipped (already applied): ${head}`)
       continue
     }

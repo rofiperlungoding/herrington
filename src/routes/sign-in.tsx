@@ -44,12 +44,12 @@ function SignInPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       })
-      
-      const data = await res.json()
+
       if (!res.ok) {
-        throw new Error(data.error || 'Authentication failed. Try again.')
+        throw new Error((await res.json()).message || 'Authentication failed')
       }
 
+      const data = await res.json()
       useAuthStore.getState().setSession(data.session)
       navigate({ to: '/tasks' as never, replace: true })
     } catch (err) {
