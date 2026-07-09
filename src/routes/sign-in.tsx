@@ -44,15 +44,20 @@ function SignInPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       })
-
+      const data = await res.json()
       if (!res.ok) {
-        throw new Error((await res.json()).message || 'Authentication failed')
+        const details = data.fieldErrors
+          ? Object.entries(data.fieldErrors)
+              .map(([field, msg]) => `${field}: ${msg}`)
+              .join(', ')
+          : data.message
+        throw new Error(details || 'Authentication failed')
       }
 
-      const data = await res.json()
       useAuthStore.getState().setSession(data.session)
       navigate({ to: '/tasks' as never, replace: true })
     } catch (err) {
+      console.error('[auth] login/signup error:', err)
       setError(
         err instanceof Error ? err.message : 'Authentication failed. Try again.',
       )
@@ -110,7 +115,7 @@ function SignInPage() {
               mode === 'sign-in' ? 'current-password' : 'new-password'
             }
             required
-            minLength={6}
+            minLength={8}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
